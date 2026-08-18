@@ -71,6 +71,19 @@ body {
 .pill[data-state="loading"] { border-color: var(--warning); color: var(--warning); }
 .pill[data-state="error"]   { border-color: var(--error);   color: var(--error); }
 
+/* ---- CORS / connectivity banner ---- */
+.cors-banner {
+  max-width: 1280px;
+  margin: 16px auto -8px;
+  padding: 10px 16px;
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--warning);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
 /* ---- layout ---- */
 .layout { max-width: 1280px; margin: 0 auto; padding: 24px; display: grid; gap: 24px; }
 
@@ -109,6 +122,7 @@ body {
 .metric-card__value[data-state="ok"]      { color: var(--success); }
 .metric-card__value[data-state="loading"] { color: var(--warning); }
 .metric-card__value[data-state="error"]   { color: var(--error); }
+.metric-card__value[data-state="blocked"] { color: var(--warning); }
 
 /* ---- panels ---- */
 .panel {
@@ -141,12 +155,21 @@ body {
   flex-direction: column;
   gap: 6px;
 }
+.model-card[data-state="ok"]      { border-color: rgba(52, 211, 153, 0.45); }
+.model-card[data-state="loading"] { border-color: rgba(251, 191, 36, 0.5); }
 .model-card__name { font-weight: 600; font-size: 14px; font-family: var(--font-mono); }
 .model-card__desc { color: var(--muted); font-size: 12px; }
 .model-card__status { font-size: 12px; }
 .model-card__status[data-state="ok"]      { color: var(--success); }
 .model-card__status[data-state="loading"] { color: var(--warning); }
 .model-card__status[data-state="error"]   { color: var(--error); }
+.model-card__actions {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.model-card__active { font-size: 12px; padding: 3px 12px; }
 
 /* ---- split: chat + log ---- */
 .split {
@@ -184,6 +207,11 @@ textarea#prompt-input {
   cursor: pointer;
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-sm {
+  padding: 5px 14px;
+  font-size: 12px;
+}
+.btn.is-loading { opacity: 0.7; }
 .chat-actions__hint { color: var(--muted); font-size: 13px; }
 
 .response {
@@ -195,6 +223,8 @@ textarea#prompt-input {
   font-size: 14px;
   white-space: pre-wrap;
 }
+.response[data-state="busy"]  { border-color: rgba(251, 191, 36, 0.5); }
+.response[data-state="error"] { border-color: var(--error); }
 
 /* ---- log panel ---- */
 .log {

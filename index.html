@@ -19,8 +19,11 @@
     </div>
   </header>
 
-  <!-- Live metric cards -->
+  <!-- CORS / connectivity notice (shown when llama-swap blocks browser reads) -->
+  <div class="cors-banner" id="cors-banner" hidden></div>
+
   <main class="layout">
+    <!-- Live metric cards -->
     <section class="metric-row" aria-label="Server metrics">
       <div class="card metric-card">
         <span class="metric-card__label">Server</span>
@@ -42,6 +45,21 @@
         <span class="metric-card__value" id="metric-vram">—</span>
         <span class="metric-card__sub" id="metric-vram-sub"></span>
       </div>
+      <div class="card metric-card">
+        <span class="metric-card__label">GPU util</span>
+        <span class="metric-card__value" id="metric-gpu">—</span>
+        <span class="metric-card__sub" id="metric-gpu-sub"></span>
+      </div>
+      <div class="card metric-card">
+        <span class="metric-card__label">Temp</span>
+        <span class="metric-card__value" id="metric-temp">—</span>
+        <span class="metric-card__sub" id="metric-temp-sub"></span>
+      </div>
+      <div class="card metric-card">
+        <span class="metric-card__label">Power</span>
+        <span class="metric-card__value" id="metric-power">—</span>
+        <span class="metric-card__sub" id="metric-power-sub"></span>
+      </div>
     </section>
 
     <!-- Model grid -->
@@ -56,12 +74,12 @@
     <section class="split">
       <div class="panel" aria-label="Chat">
         <h2 class="panel__title">Prompt</h2>
-        <textarea id="prompt-input" rows="5" placeholder="Ask the loaded model…"></textarea>
+        <textarea id="prompt-input" rows="5" placeholder="Ask the loaded model… (Ctrl+Enter to send)"></textarea>
         <div class="chat-actions">
           <button class="btn" id="send-btn" type="button">Send</button>
           <span class="chat-actions__hint" id="chat-hint"></span>
         </div>
-        <div class="response" id="response" role="log">Response will appear here.</div>
+        <div class="response" id="response" role="log" aria-live="polite">Response will appear here.</div>
       </div>
       <div class="panel" aria-label="Server log">
         <h2 class="panel__title">Log</h2>

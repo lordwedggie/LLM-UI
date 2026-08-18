@@ -50,6 +50,11 @@ and ensure llama-swap allows the origin. If CORS is not configured on the
 server yet, the app should fail gracefully with a visible "server unreachable
 (CORS)" state instead of a silent error.
 
+Verified 2026-08-18 against llama-swap v250: `/v1/models`, `/v1/chat/completions`
+and `/upstream/<model>/` already send CORS headers, but `/health`, `/metrics`
+and `/logs` do not. The dashboard shows a banner for those blocked endpoints;
+the exact fix is documented in README.md → "CORS status".
+
 ## File layout
 
 - `index.html` — page shell: status header, metric cards, model grid, chat box, log panel.

@@ -20,9 +20,30 @@ requests. See [AGENTS.md](AGENTS.md) → "Server" for the CORS note.
 ## What it does
 
 - Shows every model llama-swap knows about, with load state (loaded / unloaded / loading).
-- Live health + VRAM status for the active backend.
-- A chat box that sends prompts to the loaded model (OpenAI-compatible `/v1/chat/completions`).
-- Log panel that mirrors the active model's server output.
+- One-click **Load** buttons per model — they hit llama-swap's `/upstream/<model>/`
+  preload path, the same mechanism llama-swap's own web UI uses.
+- Live health + GPU metric cards (VRAM, GPU util, temp, power) parsed from `/metrics`.
+- A **streaming** chat box (SSE) that sends prompts to the loaded model via
+  OpenAI-compatible `/v1/chat/completions`, with a non-stream fallback for old browsers.
+- Log panel that mirrors llama-swap's `/logs` buffer.
+
+## CORS status (verified 2026-08-18)
+
+- ✅ `/v1/models` (GET) — works from the browser (llama-swap echoes the Origin).
+- ✅ `/v1/chat/completions` (POST, streaming) — works (preflight + response headers OK).
+- ✅ `/upstream/<model>/` (GET) — works; llama.cpp adds the CORS header.
+- ❌ `/health`, `/metrics`, `/logs` — **blocked**: llama-swap v250 only adds
+  `Access-Control-Allow-Origin` to OPTIONS preflight responses, not to normal GETs.
+
+The dashboard degrades gracefully: server/model/chat keep working, the GPU metric
+cards and log panel show a visible "CORS blocked" state, and a banner names the
+blocked endpoints.
+
+**Exact fix:** there is no llama-swap config flag for this. Patch
+`internal/server/auth.go` → `CreateCORSMiddleware()` so non-OPTIONS responses also
+set `Access-Control-Allow-Origin` (e.g. echo the request `Origin` when present) —
+or put a tiny reverse proxy in front of `:8080` that adds the header. Then rebuild
+and restart llama-swap (config is only read at startup).
 
 ## Layout
 
@@ -36,6 +57,6 @@ app.js           state, polling, fetch, rendering
 ## Roadmap (see AGENTS.md for details)
 
 - [x] Scaffold: model list + health + chat box
-- [ ] VRAM/GPU metric cards (rocm-smi via server)
-- [ ] Model swap buttons (request a different model through llama-swap)
-- [ ] Streaming chat (SSE)
+- [x] VRAM/GPU metric cards (parsed from llama-swap `/metrics`; needs CORS patch to go live)
+- [x] Model swap buttons (Load via `/upstream/<model>/`)
+- [x] Streaming chat (SSE)
