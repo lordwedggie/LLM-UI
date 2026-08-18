@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM-UI — X2 Server Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Top status header -->
+  <header class="status-header">
+    <div class="status-header__left">
+      <span class="status-dot" id="server-dot" data-state="unknown"></span>
+      <span class="status-header__title">X2 LLM Server</span>
+      <span class="status-header__meta" id="server-url"></span>
+    </div>
+    <div class="status-header__right">
+      <span class="pill" id="active-model-pill" data-state="unknown">no model</span>
+    </div>
+  </header>
+
+  <!-- Live metric cards -->
+  <main class="layout">
+    <section class="metric-row" aria-label="Server metrics">
+      <div class="card metric-card">
+        <span class="metric-card__label">Server</span>
+        <span class="metric-card__value" id="metric-server">—</span>
+        <span class="metric-card__sub" id="metric-server-sub">not checked</span>
+      </div>
+      <div class="card metric-card">
+        <span class="metric-card__label">Active model</span>
+        <span class="metric-card__value" id="metric-model">—</span>
+        <span class="metric-card__sub" id="metric-model-sub">none loaded</span>
+      </div>
+      <div class="card metric-card">
+        <span class="metric-card__label">Status</span>
+        <span class="metric-card__value" id="metric-status">—</span>
+        <span class="metric-card__sub" id="metric-status-sub"></span>
+      </div>
+      <div class="card metric-card">
+        <span class="metric-card__label">VRAM</span>
+        <span class="metric-card__value" id="metric-vram">—</span>
+        <span class="metric-card__sub" id="metric-vram-sub"></span>
+      </div>
+    </section>
+
+    <!-- Model grid -->
+    <section class="panel" aria-label="Models">
+      <h2 class="panel__title">Models</h2>
+      <div class="model-grid" id="model-grid">
+        <!-- model cards rendered by app.js -->
+      </div>
+    </section>
+
+    <!-- Chat + logs -->
+    <section class="split">
+      <div class="panel" aria-label="Chat">
+        <h2 class="panel__title">Prompt</h2>
+        <textarea id="prompt-input" rows="5" placeholder="Ask the loaded model…"></textarea>
+        <div class="chat-actions">
+          <button class="btn" id="send-btn" type="button">Send</button>
+          <span class="chat-actions__hint" id="chat-hint"></span>
+        </div>
+        <div class="response" id="response" role="log">Response will appear here.</div>
+      </div>
+      <div class="panel" aria-label="Server log">
+        <h2 class="panel__title">Log</h2>
+        <pre class="log" id="log-panel">—</pre>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
