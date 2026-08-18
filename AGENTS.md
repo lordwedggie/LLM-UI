@@ -53,7 +53,9 @@ server yet, the app should fail gracefully with a visible "server unreachable
 Verified 2026-08-18 against llama-swap v250: `/v1/models`, `/v1/chat/completions`
 and `/upstream/<model>/` already send CORS headers, but `/health`, `/metrics`
 and `/logs` do not. The dashboard shows a banner for those blocked endpoints;
-the exact fix is documented in README.md → "CORS status".
+the exact fix is documented in README.md → "CORS status". The included
+`server.py` proxies those three endpoints locally so the dashboard works fully
+without patching llama-swap.
 
 ## File layout
 

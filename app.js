@@ -8,6 +8,33 @@ const API_BASE = "http://192.168.3.165:8080";
 const POLL_MS = 3000;
 const LOG_TAIL_LINES = 120;
 
+// When served by the included server.py, /health /metrics /logs go through a
+// same-origin proxy so the browser can actually read them. python -m http.server
+// keeps the direct (CORS-blocked) behavior.
+let PROXY_ENABLED = false;
+
+// Estimated VRAM required to load each model on X2 (weights + KV cache + buffers).
+// Grounded in the actual GGUF file sizes on X2 as of 2026-08-18.
+const VRAM_EST = {
+  "gemma4-12b":          { gb: 3,  note: "F16 MTP adapter (822 MB file)" },
+  "gemma4-31b":          { gb: 24, note: "Q4_K_M 18 GB + KV" },
+  "gemma4-31b-ablit-q8": { gb: 18, note: "Q8_0 13 GB + KV" },
+  "gemma4-31b-mtp":      { gb: 2,  note: "MTP head only (267 MB file)" },
+  "gemma4-31b-vision":   { gb: 26, note: "Q4_K_M 18 GB + mmproj + KV" },
+  "heretic-27b":         { gb: 40, note: "Q8_0 28 GB + 64K q8 KV" },
+  "qwen3-coder-next":    { gb: 90, note: "Q8_0 79 GB — exceeds 64 GB VRAM" },
+  "qwen35-122b-q3":      { gb: 68, note: "Q3_K_P 59 GB — exceeds 64 GB VRAM" },
+  "qwen35-122b-q4":      { gb: 78, note: "Q4_K_M 70 GB — exceeds 64 GB VRAM" },
+  "qwen35-122b-q5":      { gb: 90, note: "Q5_K_M 81 GB — exceeds 64 GB VRAM" },
+  "qwen36-35b-iq2":      { gb: 15, note: "IQ2_M 11 GB + KV" },
+  "qwen36-35b-iq2-merged": { gb: 16, note: "IQ2_M 12 GB + KV" },
+  "qwen36-35b-iq3":      { gb: 19, note: "IQ3_M 15 GB + KV" },
+  "qwen36-35b-q6kp":     { gb: 34, note: "Q6_K_P 29 GB + KV" },
+  "qwen36-35b-q6kp-mm":  { gb: 35, note: "Q6KP-MM 30 GB + KV" },
+  "qwen36-35b-q8kp":     { gb: 46, note: "Q8_K_P 41 GB + KV" },
+  "qwen38-27b":          { gb: 24, note: "Q4_K_M 16 GB + 64K q8 KV" },
+};
+
 const state = {
   serverOk: null,          // null = unknown, true/false
   lastError: null,
@@ -58,6 +85,15 @@ function describeError(err, fallback) {
   return err.message || String(err);
 }
 
+/* Same-origin proxy mode: when server.py is serving the page, route the
+   CORS-blocked read endpoints through it. */
+function apiUrl(path) {
+  if (PROXY_ENABLED && (path === "/health" || path === "/metrics" || path === "/logs")) {
+    return "/proxy" + path;
+  }
+  return API_BASE + path;
+}
+
 /* ---------- polling ---------- */
 
 function parseMetrics(text) {
@@ -86,9 +122,9 @@ function tail(text, lines) {
 async function poll() {
   const [modelsR, healthR, metricsR, logsR] = await Promise.allSettled([
     fetchJson(`${API_BASE}/v1/models`),
-    fetchText(`${API_BASE}/health`),
-    fetchText(`${API_BASE}/metrics`),
-    fetchText(`${API_BASE}/logs`),
+    fetchText(apiUrl("/health")),
+    fetchText(apiUrl("/metrics")),
+    fetchText(apiUrl("/logs")),
   ]);
 
   const serverReachable = modelsR.status === "fulfilled";
@@ -404,6 +440,16 @@ function renderModels(s) {
     card.appendChild(el("div", "model-card__name", m.id));
     card.appendChild(el("div", "model-card__desc", m.name));
 
+    const vramEst = VRAM_EST[m.id];
+    if (vramEst) {
+      const exceeds = vramEst.gb > 64;
+      const vram = el("div", "model-card__vram",
+        exceeds ? ">64 GB est. (exceeds VRAM)" : `~${vramEst.gb} GB est.`);
+      vram.dataset.state = exceeds ? "error" : vramEst.gb >= 55 ? "loading" : "ok";
+      vram.title = vramEst.note;
+      card.appendChild(vram);
+    }
+
     const st = el("div", "model-card__status", m.status === "loaded" ? "loaded" : m.status);
     st.dataset.state = m.status === "loaded" ? "ok"
       : m.status === "loading" ? "loading" : "unknown";
@@ -502,6 +548,16 @@ promptInput.addEventListener("keydown", (e) => {
   }
 });
 
-poll();
-setInterval(poll, POLL_MS);
-render(state);
+async function init() {
+  try {
+    const res = await fetch("/__proxy", { cache: "no-store" });
+    if (res.ok) PROXY_ENABLED = true;
+  } catch {
+    // Plain python -m http.server: keep direct API_BASE (CORS-blocked reads).
+  }
+  poll();
+  setInterval(poll, POLL_MS);
+  render(state);
+}
+
+init();

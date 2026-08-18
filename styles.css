@@ -159,6 +159,10 @@ body {
 .model-card[data-state="loading"] { border-color: rgba(251, 191, 36, 0.5); }
 .model-card__name { font-weight: 600; font-size: 14px; font-family: var(--font-mono); }
 .model-card__desc { color: var(--muted); font-size: 12px; }
+.model-card__vram { font-size: 12px; font-family: var(--font-mono); }
+.model-card__vram[data-state="ok"]      { color: var(--success); }
+.model-card__vram[data-state="loading"] { color: var(--warning); }
+.model-card__vram[data-state="error"]   { color: var(--error); }
 .model-card__status { font-size: 12px; }
 .model-card__status[data-state="ok"]      { color: var(--success); }
 .model-card__status[data-state="loading"] { color: var(--warning); }
