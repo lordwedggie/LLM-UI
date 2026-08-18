@@ -115,8 +115,14 @@ function parseMetrics(text) {
   return out;
 }
 
-function tail(text, lines) {
-  return text.split(/\r?\n/).filter(Boolean).slice(-lines).join("\n");
+/* Keep only actual prompt traffic to the model. The dashboard's own polling
+   (/health, /metrics, /logs, /v1/models) would otherwise spam the log panel. */
+function filterPromptLog(text) {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => /\/v1\/chat\/completions/.test(line))
+    .slice(-LOG_TAIL_LINES)
+    .join("\n");
 }
 
 async function poll() {
@@ -160,7 +166,7 @@ async function poll() {
     }
 
     if (logsR.status === "fulfilled") {
-      state.logs = { text: tail(logsR.value, LOG_TAIL_LINES), error: null };
+      state.logs = { text: filterPromptLog(logsR.value), error: null };
       state.cors.logs = false;
     } else {
       state.cors.logs = isCorsFailure(logsR.reason);
@@ -509,7 +515,7 @@ function renderLogs(s) {
   } else if (s.logs.error) {
     pre.textContent = `logs unavailable: ${s.logs.error}`;
   } else {
-    pre.textContent = "—";
+    pre.textContent = "No prompt requests logged yet — chat sends will appear here.";
   }
 }
 

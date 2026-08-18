@@ -30,7 +30,8 @@ requests. See [AGENTS.md](AGENTS.md) → "Server" for the CORS note.
 - Live health + GPU metric cards (VRAM, GPU util, temp, power) parsed from `/metrics`.
 - A **streaming** chat box (SSE) that sends prompts to the loaded model via
   OpenAI-compatible `/v1/chat/completions`, with a non-stream fallback for old browsers.
-- Log panel that mirrors llama-swap's `/logs` buffer.
+- Log panel that shows only actual prompt traffic (`POST /v1/chat/completions`),
+  filtering out the dashboard's own health/metrics polling noise.
 
 ## CORS status (verified 2026-08-18)
 
