@@ -33,8 +33,8 @@ const VRAM_EST = {
   "qwen36-35b-q6kp-mm":  { gb: 35, note: "Q6KP-MM 30 GB + KV" },
   "qwen36-35b-q8kp":     { gb: 46, note: "Q8_K_P 41 GB + KV" },
   "qwen38-27b":          { gb: 24, note: "Q4_K_M 16 GB + 64K q8 KV" },
-  "qwen38-q6":           { gb: 39, note: "Q6_K 21 GB + 64K q8 KV" },
-  "qwen38-q6-vision":    { gb: 40, note: "Q6_K 21 GB + mmproj + 64K q8 KV" },
+  "qwen38-q6":           { gb: 41, note: "Q6_K 21 GB + 128K q8 KV" },
+  "qwen38-q6-vision":    { gb: 43, note: "Q6_K 21 GB + mmproj + 128K q8 KV" },
 };
 
 // Vision-capable model pairs: base id -> vision variant id. The dashboard shows
