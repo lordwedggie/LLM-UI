@@ -232,7 +232,9 @@ async function loadModel(id) {
   state.lastError = null;
   render(state);
   try {
-    const res = await fetch(`${API_BASE}/upstream/${encodeURIComponent(id)}/?_=${Date.now()}`, {
+    // Use /health rather than the model root: newer llama-server builds have no
+    // embedded UI and answer 404 on "/", while /health is always 200 once ready.
+    const res = await fetch(`${API_BASE}/upstream/${encodeURIComponent(id)}/health?_=${Date.now()}`, {
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

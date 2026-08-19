@@ -65,9 +65,8 @@ and restart llama-swap (config is only read at startup).
   llama-swap `cmd`. Without it, image requests hang and return empty — the Qwen3-VL
   vision encoder needs `n_ubatch >= n_tokens` for its non-causal attention
   (upstream llama.cpp issue [#18809](https://github.com/ggml-org/llama.cpp/issues/18809),
-  fixed in llama.cpp b7721+). **Known limitation on this build:** image + tool
-  calling together (DSH agent mode) still returns empty/garbage; use
-  `gemma4-31b-vision` for agent vision tasks until llama.cpp is upgraded.
+  fixed in llama.cpp b7721+). X2 now runs **llama.cpp b10488**, which also fixes
+  Qwen3-VL image + tool calling (DSH agent mode).
 - **Gemma4 vision/text** (`gemma4-31b` / `gemma4-31b-vision`) needs
   `--chat-template-file google-gemma-4-31B-it.jinja` and 64K ctx + q8 KV.
   Without the template override it floods `<unused24>` tokens on system prompts.
