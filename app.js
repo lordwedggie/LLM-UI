@@ -33,7 +33,45 @@ const VRAM_EST = {
   "qwen36-35b-q6kp-mm":  { gb: 35, note: "Q6KP-MM 30 GB + KV" },
   "qwen36-35b-q8kp":     { gb: 46, note: "Q8_K_P 41 GB + KV" },
   "qwen38-27b":          { gb: 24, note: "Q4_K_M 16 GB + 64K q8 KV" },
+  "qwen38-q6":           { gb: 28, note: "Q6_K 21 GB + KV" },
+  "qwen38-q6-vision":    { gb: 29, note: "Q6_K 21 GB + mmproj + KV" },
 };
+
+// Vision-capable model pairs: base id -> vision variant id. The dashboard shows
+// one card per pair with a Vision toggle instead of two separate cards.
+const VISION_PAIRS = {
+  "gemma4-31b": "gemma4-31b-vision",
+  "qwen38-q6": "qwen38-q6-vision",
+};
+const VISION_BASE_OF = Object.fromEntries(
+  Object.entries(VISION_PAIRS).map(([base, variant]) => [variant, base]),
+);
+
+// Preferred model grid order: Qwen3.8 first, then Qwen3.6 uncensored, then the rest.
+const MODEL_ORDER = [
+  "qwen38-27b",
+  "qwen38-q6",
+  "qwen36-35b-iq2",
+  "qwen36-35b-iq2-merged",
+  "qwen36-35b-iq3",
+  "qwen36-35b-q6kp",
+  "qwen36-35b-q6kp-mm",
+  "qwen36-35b-q8kp",
+];
+
+function compareModels(a, b) {
+  const ia = MODEL_ORDER.indexOf(a.id);
+  const ib = MODEL_ORDER.indexOf(b.id);
+  if (ia === -1 && ib === -1) return a.id.localeCompare(b.id);
+  if (ia === -1) return 1;
+  if (ib === -1) return -1;
+  return ia - ib;
+}
+
+function logicalName(id) {
+  const base = VISION_BASE_OF[id];
+  return base ? `${base} (vision)` : id;
+}
 
 const state = {
   serverOk: null,          // null = unknown, true/false
@@ -43,6 +81,7 @@ const state = {
   activeModel: null,       // id of loaded model
   lastPollAt: null,
   pendingLoads: new Set(), // model ids with a load request in flight
+  vision: {},              // base model id -> vision toggle on/off
   chat: {
     busy: false,
     target: null,
@@ -137,12 +176,20 @@ async function poll() {
 
   if (serverReachable) {
     const data = modelsR.value.data || [];
-    state.models = data.map((m) => ({
-      id: m.id,
-      name: m.name || m.id,
-      status: (m.status && m.status.value) || "unloaded",
-    }));
+    state.models = data
+      .map((m) => ({
+        id: m.id,
+        name: m.name || m.id,
+        status: (m.status && m.status.value) || "unloaded",
+      }))
+      .sort(compareModels);
     state.activeModel = state.models.find((m) => m.status === "loaded")?.id || null;
+    // Keep the Vision toggle in sync with whatever is actually loaded.
+    for (const [base, variant] of Object.entries(VISION_PAIRS)) {
+      if (state.activeModel === base || state.activeModel === variant) {
+        state.vision[base] = state.activeModel === variant;
+      }
+    }
     state.serverOk = true;
     state.lastError = null;
     state.lastPollAt = new Date();
@@ -198,10 +245,19 @@ async function loadModel(id) {
 }
 
 function handleGridClick(e) {
+  const toggle = e.target.closest("input[data-toggle]");
+  if (toggle) {
+    state.vision[toggle.dataset.model] = toggle.checked;
+    render(state);
+    return;
+  }
   const btn = e.target.closest("button[data-action]");
   if (!btn) return;
   const id = btn.dataset.model;
-  if (btn.dataset.action === "load") void loadModel(id);
+  if (btn.dataset.action === "load") {
+    const target = (state.vision[id] && VISION_PAIRS[id]) || id;
+    void loadModel(target);
+  }
 }
 
 /* ---------- chat ---------- */
@@ -337,11 +393,11 @@ function renderHeader(s) {
       pillState = "loading";
     } else if (s.pendingLoads.size > 0) {
       dotState = "loading";
-      pillText = `loading ${[...s.pendingLoads][0]}`;
+      pillText = `loading ${logicalName([...s.pendingLoads][0])}`;
       pillState = "loading";
     } else if (s.activeModel) {
       dotState = "ok";
-      pillText = s.activeModel;
+      pillText = logicalName(s.activeModel);
       pillState = "ok";
     } else {
       dotState = "ok";
@@ -368,7 +424,7 @@ function renderMetrics(s) {
     serverSub);
 
   setMetric("metric-model",
-    s.activeModel || "—",
+    s.activeModel ? logicalName(s.activeModel) : "—",
     s.activeModel ? "ok" : "unknown",
     s.activeModel ? "loaded" : "none loaded");
 
@@ -377,9 +433,9 @@ function renderMetrics(s) {
   const statusState = s.chat.busy || s.pendingLoads.size > 0 ? "loading"
     : s.activeModel ? "ok" : "unknown";
   const statusSub = s.chat.busy
-    ? `target ${s.chat.target}`
+    ? `target ${logicalName(s.chat.target)}`
     : s.pendingLoads.size > 0
-      ? `swapping to ${[...s.pendingLoads][0]}`
+      ? `swapping to ${logicalName([...s.pendingLoads][0])}`
       : s.activeModel ? "llama-swap /v1/models" : "no model loaded";
   setMetric("metric-status", statusValue, statusState, statusSub);
 
@@ -428,6 +484,19 @@ function renderGpuMetrics(s) {
   }
 }
 
+function makeVisionToggle(id, checked) {
+  const label = el("label", "switch");
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = checked;
+  input.dataset.toggle = "vision";
+  input.dataset.model = id;
+  const slider = el("span", "switch__slider");
+  const text = el("span", "switch__label", "Vision");
+  label.append(input, slider, text);
+  return label;
+}
+
 function renderModels(s) {
   const grid = document.getElementById("model-grid");
   grid.replaceChildren();
@@ -439,9 +508,17 @@ function renderModels(s) {
   }
 
   for (const m of s.models) {
+    // Vision twins are shown as a toggle on the base card, not as separate cards.
+    if (VISION_BASE_OF[m.id]) continue;
+
+    const baseOfActive = VISION_BASE_OF[s.activeModel];
+    const isActive = m.id === s.activeModel || baseOfActive === m.id;
+    const activeIsVision = isActive && baseOfActive === m.id;
+    const effectiveStatus = isActive ? "loaded" : m.status;
+
     const card = el("div", "model-card");
-    card.dataset.state = m.status === "loaded" ? "ok"
-      : m.status === "loading" ? "loading" : "unknown";
+    card.dataset.state = effectiveStatus === "loaded" ? "ok"
+      : effectiveStatus === "loading" ? "loading" : "unknown";
 
     card.appendChild(el("div", "model-card__name", m.id));
     card.appendChild(el("div", "model-card__desc", m.name));
@@ -456,18 +533,27 @@ function renderModels(s) {
       card.appendChild(vram);
     }
 
-    const st = el("div", "model-card__status", m.status === "loaded" ? "loaded" : m.status);
-    st.dataset.state = m.status === "loaded" ? "ok"
-      : m.status === "loading" ? "loading" : "unknown";
+    const st = el("div", "model-card__status", effectiveStatus === "loaded" ? "loaded" : m.status);
+    st.dataset.state = effectiveStatus === "loaded" ? "ok"
+      : effectiveStatus === "loading" ? "loading" : "unknown";
     card.appendChild(st);
 
     const actions = el("div", "model-card__actions");
-    if (m.id === s.activeModel) {
-      actions.appendChild(el("span", "pill model-card__active", "Active"));
+    const visionOn = !!s.vision[m.id];
+    const variantId = VISION_PAIRS[m.id];
+    if (variantId) {
+      actions.appendChild(makeVisionToggle(m.id, visionOn));
+    }
+
+    if (isActive) {
+      actions.appendChild(el("span", "pill model-card__active",
+        activeIsVision ? "Active (vision)" : "Active"));
     } else {
-      const isPending = s.pendingLoads.has(m.id) || m.status === "loading";
+      const isPending = s.pendingLoads.has(m.id) ||
+        (variantId && s.pendingLoads.has(variantId)) ||
+        m.status === "loading";
       const btn = el("button", "btn btn-sm" + (isPending ? " is-loading" : ""),
-        isPending ? "Loading…" : "Load");
+        isPending ? "Loading…" : visionOn ? "Load Vision" : "Load");
       btn.type = "button";
       btn.dataset.action = "load";
       btn.dataset.model = m.id;
@@ -485,9 +571,9 @@ function renderChat(s) {
 
   const hint = document.getElementById("chat-hint");
   if (s.chat.busy) {
-    hint.textContent = `request in flight — target ${s.chat.target}`;
+    hint.textContent = `request in flight — target ${logicalName(s.chat.target)}`;
   } else if (s.activeModel) {
-    hint.textContent = `target: ${s.activeModel} (streaming)`;
+    hint.textContent = `target: ${logicalName(s.activeModel)} (streaming)`;
   } else if (s.models.length) {
     hint.textContent = "no model loaded — send will trigger a swap";
   } else {

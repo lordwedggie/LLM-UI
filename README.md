@@ -25,8 +25,11 @@ requests. See [AGENTS.md](AGENTS.md) → "Server" for the CORS note.
 - Shows every model llama-swap knows about, with load state (loaded / unloaded / loading)
   and an **estimated VRAM requirement** per model (weights + KV, grounded in the actual
   GGUF sizes on X2; models over 64 GB are flagged red).
+- Model grid is ordered: Qwen3.8 first, then Qwen3.6 uncensored, then the rest.
 - One-click **Load** buttons per model — they hit llama-swap's `/upstream/<model>/`
   preload path, the same mechanism llama-swap's own web UI uses.
+- Vision-capable models (Gemma4-31B, Qwen3.8-27B Q6) show a **Vision toggle** on their
+  card: on loads the `-vision` variant (with `--mmproj`), off loads the plain variant.
 - Live health + GPU metric cards (VRAM, GPU util, temp, power) parsed from `/metrics`.
 - A **streaming** chat box (SSE) that sends prompts to the loaded model via
   OpenAI-compatible `/v1/chat/completions`, with a non-stream fallback for old browsers.
