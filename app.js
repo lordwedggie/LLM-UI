@@ -17,10 +17,10 @@ let PROXY_ENABLED = false;
 // Grounded in the actual GGUF file sizes on X2 as of 2026-08-18.
 const VRAM_EST = {
   "gemma4-12b":          { gb: 3,  note: "F16 MTP adapter (822 MB file)" },
-  "gemma4-31b":          { gb: 24, note: "Q4_K_M 18 GB + KV" },
+  "gemma4-31b":          { gb: 38, note: "Q4_K_M 18 GB + 64K q8 KV" },
   "gemma4-31b-ablit-q8": { gb: 18, note: "Q8_0 13 GB + KV" },
   "gemma4-31b-mtp":      { gb: 2,  note: "MTP head only (267 MB file)" },
-  "gemma4-31b-vision":   { gb: 26, note: "Q4_K_M 18 GB + mmproj + KV" },
+  "gemma4-31b-vision":   { gb: 39, note: "Q4_K_M 18 GB + mmproj + 64K q8 KV" },
   "heretic-27b":         { gb: 40, note: "Q8_0 28 GB + 64K q8 KV" },
   "qwen3-coder-next":    { gb: 90, note: "Q8_0 79 GB — exceeds 64 GB VRAM" },
   "qwen35-122b-q3":      { gb: 68, note: "Q3_K_P 59 GB — exceeds 64 GB VRAM" },
