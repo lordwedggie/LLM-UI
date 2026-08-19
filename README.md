@@ -59,6 +59,17 @@ set `Access-Control-Allow-Origin` (e.g. echo the request `Origin` when present) 
 or put a tiny reverse proxy in front of `:8080` that adds the header. Then rebuild
 and restart llama-swap (config is only read at startup).
 
+## Model notes (X2 ROCm / gfx1151)
+
+- **Qwen3.8 vision** (`qwen38-q6-vision`) requires `--ubatch-size 2048` in the
+  llama-swap `cmd`. Without it, image requests hang and return empty — the Qwen3-VL
+  vision encoder needs `n_ubatch >= n_tokens` for its non-causal attention
+  (upstream llama.cpp issue [#18809](https://github.com/ggml-org/llama.cpp/issues/18809),
+  fixed in llama.cpp b7721+).
+- **Gemma4 vision/text** (`gemma4-31b` / `gemma4-31b-vision`) needs
+  `--chat-template-file google-gemma-4-31B-it.jinja` and 64K ctx + q8 KV.
+  Without the template override it floods `<unused24>` tokens on system prompts.
+
 ## Layout
 
 ```
